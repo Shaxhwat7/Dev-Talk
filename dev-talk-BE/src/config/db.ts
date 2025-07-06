@@ -1,14 +1,17 @@
 import mongoose, { mongo } from "mongoose";
+import * as dotenv from 'dotenv';
 
+dotenv.config();
 const connectDB = async () =>{
-    const uri = "mongodb+srv://admin:admin123@cluster0.2e2op.mongodb.net/";
+    const url = process.env.MONGOURL
 
-    if(!uri){
+
+    if(!url){
         console.log('Incorrect url')
         return;
     }
     try{
-        await mongoose.connect(uri)
+        await mongoose.connect(url)
     }catch(err){
         process.exit(1);
     }
