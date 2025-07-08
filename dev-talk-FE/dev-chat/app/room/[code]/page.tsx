@@ -6,23 +6,33 @@ import { Toaster, toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
-const socket = io('http://localhost:3001');
+const socket = io('http://localhost:3001', {
+  autoConnect: false, 
+});
 
 export default function RoomPage() {
   const { code } = useParams();
   const [message, setMessage] = useState('');
   const [chat, setChat] = useState<string[]>([]);
+  const [count, setCount] = useState(0);
 
   useEffect(() => {
+    if (!socket.connected) socket.connect();
+
     socket.emit('join', code);
 
-    socket.on('error', (msg) => toast.error(msg));
+    const onMessage = (msg: string) => setChat((prev) => [...prev, msg]);
+    const onError = (msg: string) => toast.error(msg);
+    const onUserCount = (count: number) => setCount(count);
 
-    socket.on('message', (msg) => {
-      setChat((prev) => [...prev, msg]);
-    });
+    socket.on('message', onMessage);
+    socket.on('error', onError);
+    socket.on('user-count', onUserCount);
 
     return () => {
+      socket.off('message', onMessage);
+      socket.off('error', onError);
+      socket.off('user-count', onUserCount);
       socket.disconnect();
     };
   }, [code]);
@@ -37,12 +47,17 @@ export default function RoomPage() {
   return (
     <div className="p-6">
       <Toaster />
-      <h1 className="text-2xl mb-4">Room Code: {code}</h1>
-      <div className="border h-60 overflow-y-auto mb-4 p-2">
+      <h1 className="text-2xl font-bold mb-2">Room Code: {code}</h1>
+      <p className="text-sm text-muted-foreground mb-4">
+        Users in the room: {count}
+      </p>
+
+      <div className="border rounded h-60 overflow-y-auto mb-4 p-2">
         {chat.map((msg, idx) => (
           <div key={idx}>{msg}</div>
         ))}
       </div>
+
       <div className="flex space-x-2">
         <Input
           placeholder="Type your message..."
