@@ -36,12 +36,25 @@ io.on('connection',async (socket:Socket)=>{
             return;
         }
         socket.join(roomCode)
+        const sockets = await io.in(roomCode).fetchSockets();
+        io.to(roomCode).emit('user-count',sockets.length);
     })
     socket.on('message',({code,msg} : {code:string;msg:string}) =>{
         socket.to(code).emit('message', `Stranger: ${msg}`)
     })
 
-    socket.on('disconnect',()=>{
+    socket.on('disconnecting',async ()=>{
+        for(const roomCode of socket.rooms){
+            if(roomCode == socket.id) continue;
+
+            const sockets = await io.in(roomCode).fetchSockets();
+            const newcount = sockets.length - 1;
+            io.to(roomCode).emit('user-count',newcount)
+        }
+        console.log("Disconnected")
+    })
+
+    socket.on('disconnected',()=>{
         console.log("Disconnected")
     })
 })

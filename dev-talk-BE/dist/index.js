@@ -49,11 +49,23 @@ io.on('connection', (socket) => __awaiter(void 0, void 0, void 0, function* () {
             return;
         }
         socket.join(roomCode);
+        const sockets = yield io.in(roomCode).fetchSockets();
+        io.to(roomCode).emit('user-count', sockets.length);
     }));
     socket.on('message', ({ code, msg }) => {
         socket.to(code).emit('message', `Stranger: ${msg}`);
     });
-    socket.on('disconnect', () => {
+    socket.on('disconnecting', () => __awaiter(void 0, void 0, void 0, function* () {
+        for (const roomCode of socket.rooms) {
+            if (roomCode == socket.id)
+                continue;
+            const sockets = yield io.in(roomCode).fetchSockets();
+            const newcount = sockets.length - 1;
+            io.to(roomCode).emit('user-count', newcount);
+        }
+        console.log("Disconnected");
+    }));
+    socket.on('disconnected', () => {
         console.log("Disconnected");
     });
 }));
