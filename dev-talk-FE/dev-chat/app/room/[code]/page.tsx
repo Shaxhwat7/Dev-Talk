@@ -1,13 +1,16 @@
 'use client';
+
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { Toaster, toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { PaperPlaneIcon } from '@radix-ui/react-icons';
+import { motion } from 'framer-motion';
 
 const socket = io('http://localhost:3001', {
-  autoConnect: false, 
+  autoConnect: false,
 });
 
 export default function RoomPage() {
@@ -15,6 +18,7 @@ export default function RoomPage() {
   const [message, setMessage] = useState('');
   const [chat, setChat] = useState<string[]>([]);
   const [count, setCount] = useState(0);
+  const chatRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!socket.connected) socket.connect();
@@ -37,35 +41,65 @@ export default function RoomPage() {
     };
   }, [code]);
 
+  useEffect(() => {
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
+  }, [chat]);
+
   const sendMessage = () => {
-    if (!message) return;
+    if (!message.trim()) return;
     socket.emit('message', { code, msg: message });
     setChat((prev) => [...prev, `You: ${message}`]);
     setMessage('');
   };
 
   return (
-    <div className="p-6">
+    <div className="pt-24 px-4 md:px-10 min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 text-white">
       <Toaster />
-      <h1 className="text-2xl font-bold mb-2">Room Code: {code}</h1>
-      <p className="text-sm text-muted-foreground mb-4">
-        Users in the room: {count}
-      </p>
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="max-w-3xl mx-auto w-full space-y-4"
+      >
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+          <h1 className="text-3xl font-bold">Room Code: <span className="text-cyan-400">{code}</span></h1>
+          <p className="text-sm text-gray-300 mt-2 md:mt-0">
+            Users in room: <span className="font-medium text-white">{count}</span>
+          </p>
+        </div>
 
-      <div className="border rounded h-60 overflow-y-auto mb-4 p-2">
-        {chat.map((msg, idx) => (
-          <div key={idx}>{msg}</div>
-        ))}
-      </div>
+        {/* Chat Box */}
+        <div
+          ref={chatRef}
+          className="bg-white/10 border border-white/10 backdrop-blur-md rounded-lg h-80 overflow-y-auto p-4 space-y-2 scrollbar-thin scrollbar-thumb-indigo-500"
+        >
+          {chat.length === 0 && (
+            <p className="text-gray-400 italic text-center mt-10">No messages yet...</p>
+          )}
+          {chat.map((msg, idx) => (
+            <div key={idx} className="bg-white/5 p-2 rounded text-sm">{msg}</div>
+          ))}
+        </div>
 
-      <div className="flex space-x-2">
-        <Input
-          placeholder="Type your message..."
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-        />
-        <Button onClick={sendMessage}>Send</Button>
-      </div>
+        {/* Message Input */}
+        <div className="flex space-x-2">
+          <Input
+            className="bg-indigo-800 text-white placeholder-gray-300"
+            placeholder="Type your message..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+          />
+          <Button
+            onClick={sendMessage}
+            className="bg-cyan-500 hover:bg-cyan-400 text-white"
+          >
+            <PaperPlaneIcon className="w-4 h-4 mr-1" /> Send
+          </Button>
+        </div>
+      </motion.div>
     </div>
   );
 }
