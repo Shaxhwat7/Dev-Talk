@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const Room_1 = __importDefault(require("../models/Room"));
+const message_1 = __importDefault(require("../models/message"));
 const router = express_1.default.Router();
 router.post('/create-room', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { code } = req.body;
@@ -33,6 +34,16 @@ router.post('/create-room', (req, res) => __awaiter(void 0, void 0, void 0, func
     }
     catch (err) {
         res.json({ error: 'Server error' });
+    }
+}));
+router.get('/chat-history/:roomCode', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { roomCode } = req.params;
+    try {
+        const history = yield message_1.default.find({ roomCode }).sort({ timeStamp: 1 });
+        res.json(history);
+    }
+    catch (err) {
+        res.status(500).json({ message: "failed to fetch chat history" });
     }
 }));
 router.post('/check-room', (req, res) => __awaiter(void 0, void 0, void 0, function* () {

@@ -1,8 +1,11 @@
 import express, { Request, Response } from "express"
 import Room from '../models/Room'
+import MessageModel from "../models/message";
+import { timeStamp } from "console";
 const router = express.Router();
 
 router.post('/create-room', async (req: Request, res: Response): Promise<void> => {
+    
     const {code} = req.body
 
     if(!code){
@@ -25,7 +28,15 @@ router.post('/create-room', async (req: Request, res: Response): Promise<void> =
         res.json({error:'Server error'})
     }
 })
-
+router.get('/chat-history/:roomCode',async(req,res) => {
+    const {roomCode} = req.params;
+    try{
+        const history = await MessageModel.find({roomCode}).sort({timeStamp:1});
+        res.json(history)
+    }catch(err){
+        res.status(500).json({message:"failed to fetch chat history"})
+    }
+})
 router.post('/check-room', async (req: Request, res: Response): Promise<void> => {
     const {code} = req.body;
 
