@@ -16,7 +16,7 @@ export const useSocket = () => {
 
     const initSocket = async () => {
       if (!globalSocket || globalSocket.disconnected) {
-        console.log('🔌 Creating new socket connection');
+        console.log('Creating new socket connection');
         
         if (globalSocket) {
           globalSocket.removeAllListeners();
@@ -42,12 +42,12 @@ export const useSocket = () => {
         });
 
         globalSocket.on('connect_error', (error) => {
-          console.error('🔥 Socket connection error:', error);
+          console.error('Socket connection error:', error);
           setIsConnected(false);
         });
 
       } else {
-        console.log('♻️ Reusing existing socket connection');
+        console.log('Reusing existing socket connection');
         setIsConnected(globalSocket.connected);
       }
       
@@ -64,7 +64,7 @@ export const useSocket = () => {
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (globalSocket) {
-        console.log('🧹 Page unloading, disconnecting socket');
+        console.log('Page unloading, disconnecting socket');
         globalSocket.disconnect();
         globalSocket = null;
       }
