@@ -18,7 +18,7 @@ import { motion } from 'framer-motion';
 
 const socket = io('http://localhost:3001');
 
-export default function Home() {
+export default function LandingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [existingCode, setExistingCode] = useState('');
@@ -51,7 +51,7 @@ export default function Home() {
   };
 
   return (
-    <main className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 px-4">
+    <main className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] px-4">
       <Toaster />
       <motion.div
         className="w-full max-w-md"
@@ -59,36 +59,36 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="shadow-2xl border border-indigo-700 backdrop-blur-md bg-white/5">
+        <Card className="shadow-2xl border border-purple-700 backdrop-blur-md bg-white/5">
           <CardHeader className="text-center">
             <CardTitle className="text-4xl font-extrabold text-white tracking-tight flex justify-center items-center gap-2">
-              <Sparkles className="text-cyan-400 w-6 h-6" /> Dev Talk
+              <Sparkles className="text-purple-400 w-6 h-6" /> Dev<span className="text-purple-400">Chat</span>
             </CardTitle>
-            <p className="text-sm text-gray-300 mt-2">Real-time chat with a room code ✨</p>
+            <p className="text-sm text-gray-300 mt-2">Create or join a real-time room in seconds.</p>
           </CardHeader>
           <CardContent className="space-y-6">
             <Button
               onClick={createRoom}
               disabled={loading}
-              className="w-full text-lg font-medium bg-cyan-500 hover:bg-cyan-400 text-white"
+              className="w-full text-lg font-medium bg-purple-600 hover:bg-purple-500 text-white"
             >
               {loading ? (
                 <Loader2 className="animate-spin w-4 h-4 mr-2" />
               ) : (
-                '🚀 Create New Room'
+                'Create New Room'
               )}
             </Button>
-            <Separator className="bg-indigo-600" />
+            <Separator className="bg-purple-600" />
             <div className="space-y-2">
               <Input
-                className="bg-indigo-800 text-white placeholder-gray-300"
+                className="bg-[#302b63] text-white placeholder-gray-400"
                 placeholder="Enter existing room code"
                 value={existingCode}
                 onChange={(e) => setExistingCode(e.target.value)}
               />
               <Button
                 onClick={handleJoin}
-                className="w-full bg-transparent border border-cyan-500 text-cyan-400 hover:bg-cyan-500 hover:text-white"
+                className="w-full bg-transparent border border-purple-500 text-purple-400 hover:bg-purple-600 hover:text-white"
               >
                 Join Room
               </Button>

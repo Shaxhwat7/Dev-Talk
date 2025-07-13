@@ -1,10 +1,11 @@
 'use client';
+
 import { useParams } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { Toaster, toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useSocket } from '@/hooks/useSocket'; 
+import { useSocket } from '@/hooks/useSocket';
 import axios from 'axios';
 
 export default function RoomPage() {
@@ -13,7 +14,7 @@ export default function RoomPage() {
   const [chat, setChat] = useState<string[]>([]);
   const [count, setCount] = useState(0);
   const { socket, isConnected } = useSocket();
-  
+
   const hasJoinedRoom = useRef(false);
   const currentRoom = useRef<string | null>(null);
   const listenersAttached = useRef(false);
@@ -33,13 +34,12 @@ export default function RoomPage() {
         console.error('Socket error:', msg);
         toast.error(msg);
       };
-      
+
       const handleMessage = (msg: string) => {
         setChat((prev) => [...prev, msg]);
       };
 
       const handleUserCount = (count: number) => {
-        console.log('Received user count:', count);
         setCount(count);
       };
 
@@ -62,7 +62,6 @@ export default function RoomPage() {
 
     const joinAndFetch = async () => {
       if (!hasJoinedRoom.current) {
-        console.log('🚪 Joining room:', code);
         socket.emit('join', code);
         hasJoinedRoom.current = true;
 
@@ -80,12 +79,12 @@ export default function RoomPage() {
       }
     };
 
-  joinAndFetch();
-}, [socket, code, isConnected]);
+    joinAndFetch();
+  }, [socket, code, isConnected]);
 
   const sendMessage = () => {
     if (!message || !socket?.connected) return;
-    
+
     socket.emit('message', { code, msg: message });
     setChat((prev) => [...prev, `You: ${message}`]);
     setMessage('');
@@ -98,33 +97,48 @@ export default function RoomPage() {
   };
 
   return (
-    <div className="p-6">
+    <main className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] text-white flex flex-col items-center p-6 relative z-10">
       <Toaster />
-      <h1 className="text-2xl mb-4">Room Code: {code}</h1>
-      <div className="flex items-center gap-2 mb-2">
-        <p>Users in the room: {count}</p>
-        <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-        <span className="text-sm text-gray-600">
-          {isConnected ? 'Connected' : 'Disconnected'}
-        </span>
+      <div className="w-full max-w-3xl bg-white/5 backdrop-blur-md border border-white/10 rounded-xl p-6 mt-24 shadow-xl">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold">
+            Room Code: <span className="text-purple-400">{code}</span>
+          </h1>
+          <div className="flex items-center gap-2 text-sm">
+            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`} />
+            <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
+            <span className="ml-4">Users: {count}</span>
+          </div>
+        </div>
+
+        <div className="h-80 overflow-y-auto p-4 bg-white/10 rounded-lg border border-white/10 mb-6 space-y-2">
+          {chat.map((msg, idx) => (
+            <div key={idx} className="text-sm text-gray-200">
+              {msg}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-2 mt-4">
+          <Input
+            type="text"
+            placeholder="Type your message..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={!isConnected}
+            className="flex-1 bg-white/10 text-white placeholder-gray-300 border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
+          <Button
+            onClick={sendMessage}
+            disabled={!isConnected}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4"
+          >
+            Send
+          </Button>
+        </div>
+
       </div>
-      <div className="border h-60 overflow-y-auto mb-4 p-2">
-        {chat.map((msg, idx) => (
-          <div key={idx}>{msg}</div>
-        ))}
-      </div>
-      <div className="flex space-x-2">
-        <Input
-          placeholder="Type your message..."
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyPress={handleKeyPress}
-          disabled={!isConnected}
-        />
-        <Button onClick={sendMessage} disabled={!isConnected}>
-          Send
-        </Button>
-      </div>
-    </div>
+    </main>
   );
 }
