@@ -7,7 +7,6 @@ import roomRoutes from "./routes/room";
 import userRoutes from "./routes/Users";
 import connectDB from "./config/db";
 import MessageModel from "./models/message";
-import { timeStamp } from "console";
 
 const app = express();
 const server = createServer(app);
@@ -25,7 +24,7 @@ const io = new Server(server, {
   },
 });
 
-const socketRooms = new Map<string, string>();
+const roomUsers = new Map<string, Set<string>>();
 
 io.on("connection", (socket: Socket) => {
   console.log("New socket connected:", socket.id);
@@ -39,104 +38,74 @@ io.on("connection", (socket: Socket) => {
     }
   });
 
-socket.on("join", async (roomCode: string) => {
-  const room = await Room.findOne({ code: roomCode });
-  if (!room) {
-    socket.emit("error", "Room does not exist");
-    return;
-  }
+  socket.on("join", async (roomCode: string, username: string) => {
+    const room = await Room.findOne({ code: roomCode });
+    if (!room) {
+      socket.emit("error", "Room does not exist");
+      return;
+    }
 
+    if (!roomUsers.has(roomCode)) {
+      roomUsers.set(roomCode, new Set());
+    }
 
-  socket.join(roomCode);
-  socketRooms.set(socket.id, roomCode);
+    const users = roomUsers.get(roomCode)!;
+    users.add(username);
 
-  const sockets = await io.in(roomCode).fetchSockets();
-  const userCount = sockets.length;
+    socket.data.username = username;
+    socket.data.roomCode = roomCode;
 
-  console.log(`Room [${roomCode}] - Active users: ${userCount}`);
-  io.to(roomCode).emit("user-count", userCount);
-});
-
+    socket.join(roomCode);
+    console.log(`${username} joined room ${roomCode}`);
+    io.to(roomCode).emit("user-count", Array.from(users));
+  });
 
   socket.on("message", async ({ code, msg }: { code: string; msg: string }) => {
-    const currentRoom = socketRooms.get(socket.id);
-    if (currentRoom === code) {
-      socket.to(code).emit("message", `Stranger: ${msg}`);
-      await MessageModel.create({
-        roomCode:code,
-        sender:socket.id,
-        text:msg
-      })
-    } else {
-      console.log(`Socket ${socket.id} tried to send message to room ${code} but is not in that room`);
+    const roomCode = socket.data.roomCode;
+    const username = socket.data.username;
+
+    if (roomCode !== code) {
+      console.warn(`${username} tried to send message to wrong room.`);
+      return;
     }
+
+    socket.to(code).emit("message", `${username}: ${msg}`);
+    await MessageModel.create({
+      roomCode: code,
+      sender: username,
+      text: msg,
+    });
   });
 
   socket.on("disconnecting", async () => {
-    
-    for(const roomCode of socket.rooms){
-      if(roomCode === socket.id) continue;
+    const roomCode = socket.data.roomCode;
+    const username = socket.data.username;
 
-      const sockets = await io.in(roomCode).fetchSockets();
+    if (roomCode && username) {
+      const users = roomUsers.get(roomCode);
+      users?.delete(username);
 
-      const remaining = sockets.length - 1
-      if(remaining === 0){
-        try{
-          await Room.findOneAndDelete({code:roomCode})
-          await MessageModel.deleteMany({roomCode})
-        }catch(err){
-          console.log('Error deleting room or messages')
+      if (users && users.size === 0) {
+        try {
+          await Room.findOneAndDelete({ code: roomCode });
+          await MessageModel.deleteMany({ roomCode });
+          roomUsers.delete(roomCode);
+          console.log(`Deleted room ${roomCode} due to no users`);
+        } catch (err) {
+          console.error("Error deleting room or messages:", err);
         }
-      }else{
-        io.to(roomCode).emit('user-count',remaining)
+      } else {
+        io.to(roomCode).emit("user-count", Array.from(users ?? []));
       }
     }
   });
 
   socket.on("disconnect", (reason) => {
     console.log(`Socket disconnected: ${socket.id}, reason: ${reason}`);
-    
-    const room = socketRooms.get(socket.id);
-    if (room) {
-      socketRooms.delete(socket.id);
-      console.log(`Cleaned up socket ${socket.id} from room mapping`);
-    }
   });
 });
 
-const sendUserCount = async (roomCode: string) => {
-  try {
-    const sockets = await io.in(roomCode).fetchSockets();
-    const userCount = sockets.length;
-    
-    console.log(`Room [${roomCode}] - Active users: ${userCount}`);
-    console.log(`Socket IDs in room: ${sockets.map(s => s.id).join(', ')}`);
-    
-    const mappedSockets = Array.from(socketRooms.entries())
-      .filter(([_, room]) => room === roomCode)
-      .map(([socketId, _]) => socketId);
-    console.log(`🗂️ Mapped sockets for room: ${mappedSockets.join(', ')}`);
-    
-    io.to(roomCode).emit("user-count", userCount);
-  } catch (error) {
-    console.error(`Error sending user count for room ${roomCode}:`, error);
-  }
-};
-
-const cleanupStaleConnections = () => {
-  const connectedSockets = new Set(io.sockets.sockets.keys());
-  
-  for (const [socketId, room] of socketRooms.entries()) {
-    if (!connectedSockets.has(socketId)) {
-      console.log(`Removing stale socket mapping: ${socketId} -> ${room}`);
-      socketRooms.delete(socketId);
-    }
-  }
-};
-
-setInterval(cleanupStaleConnections, 5 * 60 * 1000);
-
 const PORT = 3001;
 server.listen(PORT, () => {
-  console.log(" Socket.io running on port", PORT);
+  console.log("Socket.io server running on port", PORT);
 });

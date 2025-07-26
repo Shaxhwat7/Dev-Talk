@@ -11,10 +11,10 @@ const SECRET_KEY = process.env.SECRET_KEY || "fallback_secret";
 const router = Router();
 
 router.post('/create-user', async (req: Request, res: Response) => {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
 
     try {
-        const exist = await UsersModel.findOne({ username: email });
+        const exist = await UsersModel.findOne({ username: username });
 
         if (exist) {
             res.status(409).json({ message: "User already exists" });
@@ -22,14 +22,14 @@ router.post('/create-user', async (req: Request, res: Response) => {
         }
 
         const createuser = new UsersModel({
-            username: email,
+            username: username,
             password: password,
         });
 
         await createuser.save();
 
         const token = jwt.sign(
-            { id: createuser._id, username: email },
+            { id: createuser._id, username: username },
             SECRET_KEY,
             { expiresIn: "1h" }
         );
