@@ -2,9 +2,23 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function LandingPage() {
   const router = useRouter();
+  const [authenticated, setauthenticated] = useState(false)
+  useEffect(()=>{
+    const user = localStorage.getItem("user")
+    setauthenticated(!!user)
+  },[])
+
+  const handleGetStarted = () => {
+    if(authenticated){
+      router.push('/dashboard')
+    }else{
+      router.push('/signin')
+    }
+  }
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] text-white flex flex-col">
       
@@ -28,7 +42,7 @@ export default function LandingPage() {
           DevChat lets you spin up real-time chat rooms in a snap. Invite anyone. No downloads, no signups — just pure conversation.
         </p>
         <Link href="/dashboard">
-          <Button className="px-6 py-3 text-lg bg-purple-500 hover:bg-purple-600">
+          <Button className="px-6 py-3 text-lg bg-purple-500 hover:bg-purple-600" onClick={handleGetStarted}>
             Get Started
           </Button>
         </Link>

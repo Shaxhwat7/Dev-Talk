@@ -14,19 +14,22 @@ import { Label } from "@/components/ui/label"
 import { useState } from "react"
 import axios from 'axios'
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 export default function SignIn() {
-  const [email, setEmail] = useState("")
+  const [username, setusername] = useState("")
   const [pass, setPass] = useState("")
-
+  const router = useRouter();
   const createUser = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
       const response = await axios.post('http://localhost:3001/create-user', {
-        email,
+        username,
         pass
       })
       toast.success('User created successfully')
+      localStorage.setItem("user", JSON.stringify({ username }));
+      router.push('/dashboard')
       console.log(response.data)
     } catch (e: any) {
       toast.error('Something went wrong')
@@ -39,25 +42,20 @@ export default function SignIn() {
       <Card className="w-full max-w-sm">
         <form onSubmit={createUser}>
           <CardHeader>
-            <CardTitle>Login to your account</CardTitle>
-            <CardDescription>
-              Enter your email below to login to your account
-            </CardDescription>
-            <CardAction>
-              <Button variant="link">Sign Up</Button>
-            </CardAction>
+            <CardTitle>Login to continue</CardTitle>
+            
           </CardHeader>
-
+          <br/>
           <CardContent>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Username</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="username"
+                  type="string"
+                  placeholder="Username"
+                  value={username}
+                  onChange={(e) => setusername(e.target.value)}
                   required
                 />
               </div>
@@ -82,7 +80,7 @@ export default function SignIn() {
               </div>
             </div>
           </CardContent>
-
+          <br/>
           <CardFooter className="flex-col gap-2">
             <Button type="submit" className="w-full">
               Login
