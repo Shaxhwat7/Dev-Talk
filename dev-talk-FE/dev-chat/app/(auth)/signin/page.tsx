@@ -15,26 +15,33 @@ import { useState } from "react"
 import axios from 'axios'
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import { error } from "console"
 
 export default function SignIn() {
   const [username, setusername] = useState("")
-  const [pass, setPass] = useState("")
+  const [password, setPassword] = useState("")
   const router = useRouter();
   const createUser = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const response = await axios.post('http://localhost:3001/create-user', {
+      const response = await axios.post('http://localhost:3001/api/create-user', {
         username,
-        pass
+        password:password
       })
       toast.success('User created successfully')
-      localStorage.setItem("user", JSON.stringify({ username }));
+      localStorage.setItem("user", response.data.username );
       router.push('/dashboard')
       console.log(response.data)
     } catch (e: any) {
-      toast.error('Something went wrong')
-      console.error(e)
-    }
+      if(axios.isAxiosError(e) && e.response?.status === 409){
+        toast("Username already Taken")
+      }
+      else{
+        toast.error('Something went wrong')
+        console.error(e)
+    
+      }
+      }
   }
 
   return (
@@ -74,8 +81,8 @@ export default function SignIn() {
                   id="password"
                   type="password"
                   required
-                  value={pass}
-                  onChange={(e) => setPass(e.target.value)}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
             </div>

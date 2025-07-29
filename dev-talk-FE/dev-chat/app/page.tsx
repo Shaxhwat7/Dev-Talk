@@ -30,7 +30,7 @@ export default function LandingPage() {
           <Link href="#features" className="hover:text-purple-400">Features</Link>
           <Link href="#about" className="hover:text-purple-400">About</Link>
           <Link href="#contact" className="hover:text-purple-400">Contact</Link>
-          <Button className="ml-4 bg-purple-600 hover:bg-purple-700">Sign In</Button>
+          <Button className="ml-4 bg-purple-600 hover:bg-purple-700" onClick={()=>router.push('/signin')}>Sign In</Button>
         </nav>
       </header>
 

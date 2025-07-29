@@ -18,7 +18,11 @@ export default function RoomPage() {
   const hasJoinedRoom = useRef(false);
   const currentRoom = useRef<string | null>(null);
   const listenersAttached = useRef(false);
-  const user = localStorage.getItem("user")
+  const [user, setuser] = useState<string | null>(null)
+    useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    setuser(storedUser);
+  }, []);
   useEffect(() => {
     if (!socket || !code) return;
 
@@ -64,7 +68,7 @@ export default function RoomPage() {
       if (!hasJoinedRoom.current) {
         socket.emit('join', {
           code,
-          username:user
+          user
         });
         hasJoinedRoom.current = true;
 
