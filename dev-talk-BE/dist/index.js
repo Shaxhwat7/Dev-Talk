@@ -34,7 +34,7 @@ const io = new socket_io_1.Server(server, {
         methods: ["GET", "POST"],
     },
 });
-const socketRooms = new Map();
+const roomUsers = new Map();
 io.on("connection", (socket) => {
     console.log("New socket connected:", socket.id);
     socket.on("create-room", (roomCode) => __awaiter(void 0, void 0, void 0, function* () {
@@ -46,91 +46,64 @@ io.on("connection", (socket) => {
             console.log(`Room already exists: ${roomCode}`);
         }
     }));
-    socket.on("join", (roomCode) => __awaiter(void 0, void 0, void 0, function* () {
-        const beforejoin = yield io.in(roomCode).fetchSockets();
-        console.log(`[BEFORE JOIN] Room: ${roomCode} →`, beforejoin.map((s) => s.id));
+    socket.on("join", (roomCode, username) => __awaiter(void 0, void 0, void 0, function* () {
         const room = yield Room_1.default.findOne({ code: roomCode });
         if (!room) {
             socket.emit("error", "Room does not exist");
             return;
         }
+        if (!roomUsers.has(roomCode)) {
+            roomUsers.set(roomCode, new Set());
+        }
+        const users = roomUsers.get(roomCode);
+        users.add(username);
+        socket.data.username = username;
+        socket.data.roomCode = roomCode;
         socket.join(roomCode);
-        socketRooms.set(socket.id, roomCode);
-        const afterjoin = yield io.in(roomCode).fetchSockets();
-        console.log(`[AFTER JOIN] Room: ${roomCode} →`, afterjoin.map((s) => s.id));
-        console.log(`Room [${roomCode}] - Active users: ${afterjoin.length}`);
-        io.to(roomCode).emit("user-count", afterjoin.length);
+        console.log(`${username} joined room ${roomCode}`);
+        io.to(roomCode).emit("user-count", Array.from(users));
     }));
     socket.on("message", (_a) => __awaiter(void 0, [_a], void 0, function* ({ code, msg }) {
-        const currentRoom = socketRooms.get(socket.id);
-        if (currentRoom === code) {
-            socket.to(code).emit("message", `Stranger: ${msg}`);
-            yield message_1.default.create({
-                roomCode: code,
-                sender: socket.id,
-                text: msg
-            });
+        const roomCode = socket.data.roomCode;
+        const username = socket.data.username;
+        if (roomCode !== code) {
+            console.warn(`${username} tried to send message to wrong room.`);
+            return;
         }
-        else {
-            console.log(`Socket ${socket.id} tried to send message to room ${code} but is not in that room`);
-        }
+        socket.to(code).emit("message", `${username}: ${msg}`);
+        yield message_1.default.create({
+            roomCode: code,
+            sender: username,
+            text: msg,
+        });
     }));
     socket.on("disconnecting", () => __awaiter(void 0, void 0, void 0, function* () {
-        for (const roomCode of socket.rooms) {
-            if (roomCode === socket.id)
-                continue;
-            const sockets = yield io.in(roomCode).fetchSockets();
-            const remaining = sockets.length - 1;
-            if (remaining === 0) {
+        const roomCode = socket.data.roomCode;
+        const username = socket.data.username;
+        if (roomCode && username) {
+            const users = roomUsers.get(roomCode);
+            users === null || users === void 0 ? void 0 : users.delete(username);
+            if (users && users.size === 0) {
                 try {
                     yield Room_1.default.findOneAndDelete({ code: roomCode });
                     yield message_1.default.deleteMany({ roomCode });
+                    roomUsers.delete(roomCode);
+                    console.log(`Deleted room ${roomCode} due to no users`);
                 }
                 catch (err) {
-                    console.log('Error deleting room or messages');
+                    console.error("Error deleting room or messages:", err);
                 }
             }
             else {
-                io.to(roomCode).emit('user-count', remaining);
+                io.to(roomCode).emit("user-count", Array.from(users !== null && users !== void 0 ? users : []));
             }
         }
     }));
     socket.on("disconnect", (reason) => {
         console.log(`Socket disconnected: ${socket.id}, reason: ${reason}`);
-        const room = socketRooms.get(socket.id);
-        if (room) {
-            socketRooms.delete(socket.id);
-            console.log(`Cleaned up socket ${socket.id} from room mapping`);
-        }
     });
 });
-const sendUserCount = (roomCode) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const sockets = yield io.in(roomCode).fetchSockets();
-        const userCount = sockets.length;
-        console.log(`Room [${roomCode}] - Active users: ${userCount}`);
-        console.log(`Socket IDs in room: ${sockets.map(s => s.id).join(', ')}`);
-        const mappedSockets = Array.from(socketRooms.entries())
-            .filter(([_, room]) => room === roomCode)
-            .map(([socketId, _]) => socketId);
-        console.log(`🗂️ Mapped sockets for room: ${mappedSockets.join(', ')}`);
-        io.to(roomCode).emit("user-count", userCount);
-    }
-    catch (error) {
-        console.error(`Error sending user count for room ${roomCode}:`, error);
-    }
-});
-const cleanupStaleConnections = () => {
-    const connectedSockets = new Set(io.sockets.sockets.keys());
-    for (const [socketId, room] of socketRooms.entries()) {
-        if (!connectedSockets.has(socketId)) {
-            console.log(`Removing stale socket mapping: ${socketId} -> ${room}`);
-            socketRooms.delete(socketId);
-        }
-    }
-};
-setInterval(cleanupStaleConnections, 5 * 60 * 1000);
 const PORT = 3001;
 server.listen(PORT, () => {
-    console.log(" Socket.io running on port", PORT);
+    console.log("Socket.io server running on port", PORT);
 });

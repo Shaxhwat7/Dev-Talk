@@ -47,28 +47,26 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const UserModel_1 = __importDefault(require("../models/UserModel"));
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const dotenv = __importStar(require("dotenv"));
 dotenv.config();
 const SECRET_KEY = process.env.SECRET_KEY || "fallback_secret";
 const router = (0, express_1.Router)();
 router.post('/create-user', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
     try {
-        const exist = yield UserModel_1.default.findOne({ username: email });
+        const exist = yield UserModel_1.default.findOne({ username: username });
         if (exist) {
             res.status(409).json({ message: "User already exists" });
             return;
         }
         const createuser = new UserModel_1.default({
-            username: email,
+            username: username,
             password: password,
         });
         yield createuser.save();
-        const token = jsonwebtoken_1.default.sign({ id: createuser._id, username: email }, SECRET_KEY, { expiresIn: "1h" });
         res.status(200).json({
             message: "Sign up successful",
-            token
+            username: createuser.username
         });
     }
     catch (e) {

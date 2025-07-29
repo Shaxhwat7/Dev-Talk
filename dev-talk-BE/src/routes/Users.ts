@@ -22,21 +22,16 @@ router.post('/create-user', async (req: Request, res: Response) => {
         }
 
         const createuser = new UsersModel({
-            username: username,
-            password: password,
+            username,
+            password,
         });
 
         await createuser.save();
 
-        const token = jwt.sign(
-            { id: createuser._id, username: username },
-            SECRET_KEY,
-            { expiresIn: "1h" }
-        );
 
         res.status(200).json({
             message: "Sign up successful",
-            token
+            username:createuser.username
         });
 
     } catch (e) {
