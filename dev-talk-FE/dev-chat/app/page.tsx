@@ -6,14 +6,10 @@ import { useEffect, useState } from 'react';
 
 export default function LandingPage() {
   const router = useRouter();
-  const [authenticated, setauthenticated] = useState(false)
-  useEffect(()=>{
-    const user = localStorage.getItem("user")
-    setauthenticated(!!user)
-  },[])
-
   const handleGetStarted = () => {
-    if(authenticated){
+    const user = localStorage.getItem('user')
+    console.log('User is logged in:', user)
+    if(user){
       router.push('/dashboard')
     }else{
       router.push('/signin')
@@ -41,11 +37,9 @@ export default function LandingPage() {
         <p className="text-lg text-gray-300 max-w-2xl mb-8">
           DevChat lets you spin up real-time chat rooms in a snap. Invite anyone. No downloads, no signups — just pure conversation.
         </p>
-        <Link href="/dashboard">
           <Button className="px-6 py-3 text-lg bg-purple-500 hover:bg-purple-600" onClick={handleGetStarted}>
             Get Started
           </Button>
-        </Link>
       </section>
 
       <div className="absolute top-[-150px] right-[-150px] w-[400px] h-[400px] bg-purple-500 opacity-20 rounded-full blur-3xl pointer-events-none" />

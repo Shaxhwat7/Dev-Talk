@@ -43,8 +43,8 @@ export default function RoomPage() {
         setChat((prev) => [...prev, msg]);
       };
 
-      const handleUserCount = (count: number) => {
-        setCount(count);
+      const handleUserCount = (users: String[]) => {
+        setCount(users.length);
       };
 
       socket.on('error', handleError);
