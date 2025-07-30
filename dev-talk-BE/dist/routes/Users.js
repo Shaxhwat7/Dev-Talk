@@ -60,8 +60,8 @@ router.post('/create-user', (req, res) => __awaiter(void 0, void 0, void 0, func
             return;
         }
         const createuser = new UserModel_1.default({
-            username: username,
-            password: password,
+            username,
+            password,
         });
         yield createuser.save();
         res.status(200).json({

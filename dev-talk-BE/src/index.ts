@@ -38,26 +38,26 @@ io.on("connection", (socket: Socket) => {
     }
   });
 
-  socket.on("join", async (roomCode: string, username: string) => {
-    const room = await Room.findOne({ code: roomCode });
+  socket.on("join", async ({code,user}) => {
+    const room = await Room.findOne({ code: code });
     if (!room) {
       socket.emit("error", "Room does not exist");
       return;
     }
 
-    if (!roomUsers.has(roomCode)) {
-      roomUsers.set(roomCode, new Set());
+    if (!roomUsers.has(code)) {
+      roomUsers.set(code, new Set());
     }
 
-    const users = roomUsers.get(roomCode)!;
-    users.add(username);
+    const users = roomUsers.get(code)!;
+    users.add(user);
 
-    socket.data.username = username;
-    socket.data.roomCode = roomCode;
+    socket.data.username = user;
+    socket.data.roomCode = code;
 
-    socket.join(roomCode);
-    console.log(`${username} joined room ${roomCode}`);
-    io.to(roomCode).emit("user-count", Array.from(users));
+    socket.join(code);
+    console.log(`${user} joined room ${code}`);
+    io.to(code).emit("user-count", Array.from(users));
   });
 
   socket.on("message", async ({ code, msg }: { code: string; msg: string }) => {

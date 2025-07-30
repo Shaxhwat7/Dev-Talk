@@ -38,12 +38,15 @@ router.post('/create-room', (req, res) => __awaiter(void 0, void 0, void 0, func
 }));
 router.get('/chat-history/:roomCode', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { roomCode } = req.params;
+    console.log("Incoming roomCode:", roomCode);
     try {
-        const history = yield message_1.default.find({ roomCode }).sort({ timeStamp: 1 });
+        const history = yield message_1.default.find({ roomCode }).sort({ timestamp: 1 });
+        console.log("Fetched history:", history);
         res.json(history);
     }
     catch (err) {
-        res.status(500).json({ message: "failed to fetch chat history" });
+        console.error("DB error:", err);
+        res.status(500).json({ message: "Failed to fetch chat history" });
     }
 }));
 router.post('/check-room', (req, res) => __awaiter(void 0, void 0, void 0, function* () {

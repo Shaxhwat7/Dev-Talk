@@ -46,22 +46,22 @@ io.on("connection", (socket) => {
             console.log(`Room already exists: ${roomCode}`);
         }
     }));
-    socket.on("join", (roomCode, username) => __awaiter(void 0, void 0, void 0, function* () {
-        const room = yield Room_1.default.findOne({ code: roomCode });
+    socket.on("join", (_a) => __awaiter(void 0, [_a], void 0, function* ({ code, user }) {
+        const room = yield Room_1.default.findOne({ code: code });
         if (!room) {
             socket.emit("error", "Room does not exist");
             return;
         }
-        if (!roomUsers.has(roomCode)) {
-            roomUsers.set(roomCode, new Set());
+        if (!roomUsers.has(code)) {
+            roomUsers.set(code, new Set());
         }
-        const users = roomUsers.get(roomCode);
-        users.add(username);
-        socket.data.username = username;
-        socket.data.roomCode = roomCode;
-        socket.join(roomCode);
-        console.log(`${username} joined room ${roomCode}`);
-        io.to(roomCode).emit("user-count", Array.from(users));
+        const users = roomUsers.get(code);
+        users.add(user);
+        socket.data.username = user;
+        socket.data.roomCode = code;
+        socket.join(code);
+        console.log(`${user} joined room ${code}`);
+        io.to(code).emit("user-count", Array.from(users));
     }));
     socket.on("message", (_a) => __awaiter(void 0, [_a], void 0, function* ({ code, msg }) {
         const roomCode = socket.data.roomCode;

@@ -12,8 +12,7 @@ const UserModel = new mongoose_1.default.Schema({
     },
     password: {
         type: String,
-        required: true,
-        unique: true
+        required: true
     }
 });
 const UsersModel = mongoose_1.default.model('Users', UserModel);
